@@ -1,73 +1,236 @@
-# Welcome to your Lovable project
+# FacturePro - Application de Facturation Tunisienne
 
-## Project info
+Application web complète de gestion de facturation pour les entreprises tunisiennes, avec support natif du Dinar Tunisien (TND) et conformité aux normes fiscales tunisiennes.
 
-**URL**: https://lovable.dev/projects/ab90e9af-06ba-4a5c-9100-d93f1033cf5e
+## 🎯 Fonctionnalités principales
 
-## How can I edit this code?
+### Gestion des Clients
+- ✅ Création, modification et suppression de clients
+- ✅ Informations complètes : matricule fiscal, TVA, coordonnées
+- ✅ Champs spécifiques à la Tunisie (matricule fiscal tunisien)
+- ✅ Historique et suivi des clients
 
-There are several ways of editing your application.
+### Gestion des Produits & Services  
+- ✅ Catalogue de produits avec prix en TND
+- ✅ Taux de TVA tunisiens (0%, 7%, 13%, 19%)
+- ✅ Gestion des unités (unité, heure, jour, forfait, etc.)
+- ✅ Statut actif/inactif
+- ✅ Références et descriptions détaillées
 
-**Use Lovable**
+### Gestion des Factures
+- ✅ Création de factures, avoirs et factures complémentaires
+- ✅ Lignes de facture avec quantités, prix, remises et TVA
+- ✅ Calcul automatique des montants HT, TVA et TTC
+- ✅ Numérotation automatique des factures (FACT-YYYY-XXXX)
+- ✅ Statuts : brouillon, envoyée, payée, en retard, annulée
+- ✅ Conditions de paiement personnalisables
+- ✅ Notes et informations complémentaires
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ab90e9af-06ba-4a5c-9100-d93f1033cf5e) and start prompting.
+### Gestion des Paiements
+- ✅ Enregistrement de paiements multiples par facture
+- ✅ Modes de paiement : espèces, chèque, virement, carte, prélèvement
+- ✅ Suivi des montants payés et restant à payer
+- ✅ Références de paiement (numéro de chèque, référence virement)
+- ✅ Historique complet des paiements
 
-Changes made via Lovable will be committed automatically to this repo.
+### Rapports et Statistiques
+- ✅ Chiffre d'affaires par période
+- ✅ Montants encaissés et en attente
+- ✅ Analyse par statut de facture
+- ✅ Répartition par mode de paiement
+- ✅ Liste des dernières factures
+- ✅ Filtrage par dates personnalisables
 
-**Use your preferred IDE**
+### Sécurité et Conformité
+- ✅ Authentification sécurisée avec Supabase
+- ✅ Row Level Security (RLS) pour l'isolation des données
+- ✅ Conformité RGPD
+- ✅ Cryptage des données
+- ✅ Gestion des rôles et permissions
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 💻 Technologies utilisées
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Vite** - Build tool rapide pour le développement
+- **TypeScript** - Typage statique pour plus de robustesse
+- **React** - Interface utilisateur réactive
+- **Shadcn-ui** - Composants UI modernes et accessibles
+- **Tailwind CSS** - Stylisation utilitaire
+- **Supabase** - Backend-as-a-Service (authentification, base de données, stockage)
+- **React Router** - Navigation côté client
+- **TanStack Query** - Gestion de l'état et cache des données
+- **Zod** - Validation de schémas
+- **React Hook Form** - Gestion des formulaires
 
-Follow these steps:
+## 🚀 Installation et démarrage
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Prérequis
+- Node.js 18+ et npm (recommandé via [nvm](https://github.com/nvm-sh/nvm))
+- Compte Supabase (gratuit) pour version cloud
+
+### Utilisation avec Supabase Cloud
+
+```bash
+# 1. Cloner le repository
 git clone <YOUR_GIT_URL>
+cd facture-flux-28
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Installer les dépendances
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Créer un projet Supabase sur supabase.com
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Configurer les variables d'environnement
+# Créer un fichier .env avec vos clés Supabase
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# 5. Exécuter les migrations de base de données
+# Dans Supabase SQL Editor, exécuter:
+# supabase/migrations/20251027183042_efc03275-3921-4e03-9959-9bd8d9be1073.sql
+
+# 6. Démarrer le serveur de développement
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+L'application sera accessible sur `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# 1. Cloner le repository
+git clone <YOUR_GIT_URL>
+cd facture-flux-28
 
-**Use GitHub Codespaces**
+# 2. Installer les dépendances
+npm install
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# 3. Créer un projet Supabase sur supabase.com
 
-## What technologies are used for this project?
+# 4. Configurer les variables d'environnement
+# Créer un fichier .env avec vos clés Supabase
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-This project is built with:
+# 5. Exécuter les migrations de base de données
+# Dans Supabase SQL Editor, exécuter:
+# supabase/migrations/20251027183042_efc03275-3921-4e03-9959-9bd8d9be1073.sql
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 6. Démarrer le serveur de développement
+npm run dev
+```
 
-## How can I deploy this project?
+## 📋 Structure du projet
 
-Simply open [Lovable](https://lovable.dev/projects/ab90e9af-06ba-4a5c-9100-d93f1033cf5e) and click on Share -> Publish.
+```
+src/
+├── components/
+│   ├── ui/                 # Composants UI réutilisables (shadcn)
+│   └── DashboardLayout.tsx # Layout principal avec navigation
+├── pages/
+│   ├── Auth.tsx           # Authentification
+│   ├── Dashboard.tsx      # Tableau de bord
+│   ├── Clients.tsx        # Liste des clients
+│   ├── ClientForm.tsx     # Formulaire client (création/édition)
+│   ├── Products.tsx       # Liste des produits
+│   ├── ProductForm.tsx    # Formulaire produit (création/édition)
+│   ├── Invoices.tsx       # Liste des factures
+│   ├── InvoiceForm.tsx    # Formulaire facture (création/édition)
+│   ├── InvoiceDetail.tsx  # Détails et paiements d'une facture
+│   └── Reports.tsx        # Rapports et statistiques
+├── lib/
+│   ├── currency.ts        # Utilitaires de formatage TND et calculs
+│   └── utils.ts           # Utilitaires généraux
+├── integrations/supabase/
+│   ├── client.ts          # Client Supabase
+│   └── types.ts           # Types TypeScript générés
+└── hooks/                 # Hooks React personnalisés
 
-## Can I connect a custom domain to my Lovable project?
+supabase/
+└── migrations/            # Migrations de base de données SQL
+```
 
-Yes, you can!
+## 💰 Format monétaire TND
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+L'application utilise le format tunisien pour les montants :
+- **Format** : `X,XXX DT` (avec 3 décimales)
+- **Exemple** : `1 234,567 DT`
+- **Utilitaires** : `/src/lib/currency.ts`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🗄️ Base de données
+
+### Tables principales
+
+- **clients** - Informations des clients
+- **products** - Catalogue de produits/services
+- **invoices** - En-têtes des factures
+- **invoice_items** - Lignes de facture
+- **payments** - Paiements reçus
+- **purchase_orders** - Bons de commande
+- **purchase_order_items** - Lignes de bons de commande
+
+Tous les utilisateurs ont accès uniquement à leurs propres données grâce aux politiques RLS de Supabase.
+
+## 🔐 Sécurité
+
+- Authentification via Supabase Auth
+- Row Level Security (RLS) activé sur toutes les tables
+- Données isolées par utilisateur (user_id)
+- Protection CSRF et XSS
+- HTTPS obligatoire en production
+
+## 📊 Utilisation
+
+### Créer une première facture
+
+1. **Créer un client**
+   - Aller dans "Clients" → "Nouveau client"
+   - Remplir les informations (nom, email, matricule fiscal, etc.)
+   - Enregistrer
+
+2. **Créer des produits**
+   - Aller dans "Produits" → "Nouveau produit"
+   - Définir le nom, prix HT, taux de TVA
+   - Enregistrer
+
+3. **Créer une facture**
+   - Aller dans "Factures" → "Nouvelle facture"
+   - Sélectionner le client
+   - Ajouter des lignes (produits, quantités, remises)
+   - Les totaux sont calculés automatiquement
+   - Enregistrer
+
+4. **Enregistrer un paiement**
+   - Ouvrir la facture
+   - Cliquer sur "Ajouter un paiement"
+   - Saisir le montant, mode de paiement et référence
+   - Enregistrer
+
+## 📈 Scripts disponibles
+
+```bash
+npm run dev        # Démarrer le serveur de développement
+npm run build      # Build de production
+npm run preview    # Prévisualiser le build de production
+npm run lint       # Vérifier le code avec ESLint
+```
+
+## 🌐 Déploiement
+
+L'application peut être déployée sur plusieurs plateformes :
+
+- **Vercel** (recommandé pour Vite/React)
+- **Netlify**
+- **Cloudflare Pages**
+
+### Configuration Supabase pour la production
+
+1. Créer un projet Supabase en production
+2. Exécuter les migrations SQL
+3. Configurer les variables d'environnement sur votre plateforme de déploiement
+4. Activer l'authentification et les politiques RLS
+
+## 📝 Licence
+
+Ce projet est développé pour une utilisation professionnelle en Tunisie.
+
+## 🤝 Support
+
+Pour toute question ou assistance, contactez l'équipe de développement.

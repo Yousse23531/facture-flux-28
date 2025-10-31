@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -22,3 +23,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Database
+*.sqlite
+*.db
+database/backups/
+*.sql.backup
+
+# Docker volumes
+postgres_data/
+
+# Build
+build/
+server/dist/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
+backup*.sql

@@ -10,8 +10,8 @@ CREATE TABLE public.clients (
   address TEXT,
   city TEXT,
   postal_code TEXT,
-  country TEXT DEFAULT 'France',
-  siret TEXT,
+  country TEXT DEFAULT 'Tunisie',
+  tax_id TEXT,
   tva_number TEXT,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -48,16 +48,52 @@ CREATE TABLE public.invoices (
   discount_amount DECIMAL(10,2) DEFAULT 0,
   total DECIMAL(10,2) NOT NULL DEFAULT 0,
   notes TEXT,
+  currency TEXT DEFAULT 'TND' NOT NULL,
   payment_conditions TEXT DEFAULT 'Paiement à 30 jours',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   UNIQUE(user_id, invoice_number)
 );
 
+-- Table des bons de commande
+CREATE TABLE public.purchase_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  order_number TEXT NOT NULL,
+  client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE RESTRICT,
+  order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  delivery_date DATE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'confirmed', 'delivered', 'cancelled')),
+  subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+  tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount_amount DECIMAL(10,2) DEFAULT 0,
+  total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  currency TEXT DEFAULT 'TND' NOT NULL,
+  delivery_conditions TEXT DEFAULT 'Livraison dans les 30 jours',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  UNIQUE(user_id, order_number)
+);
+
 -- Table des lignes de facture
 CREATE TABLE public.invoice_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
+  description TEXT NOT NULL,
+  quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2) NOT NULL,
+  tax_rate DECIMAL(5,2) NOT NULL DEFAULT 20.00,
+  discount_percent DECIMAL(5,2) DEFAULT 0,
+  total DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Table des lignes de bons de commande
+CREATE TABLE public.purchase_order_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  purchase_order_id UUID NOT NULL REFERENCES public.purchase_orders(id) ON DELETE CASCADE,
   product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
   description TEXT NOT NULL,
   quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
@@ -84,7 +120,9 @@ CREATE TABLE public.payments (
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- Politiques RLS pour clients
@@ -138,6 +176,23 @@ CREATE POLICY "Users can delete their own invoices"
   ON public.invoices FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Politiques RLS pour purchase_orders
+CREATE POLICY "Users can view their own purchase orders"
+  ON public.purchase_orders FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own purchase orders"
+  ON public.purchase_orders FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own purchase orders"
+  ON public.purchase_orders FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own purchase orders"
+  ON public.purchase_orders FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Politiques RLS pour invoice_items
 CREATE POLICY "Users can view invoice items of their invoices"
   ON public.invoice_items FOR SELECT
@@ -169,6 +224,39 @@ CREATE POLICY "Users can delete invoice items of their invoices"
     SELECT 1 FROM public.invoices 
     WHERE invoices.id = invoice_items.invoice_id 
     AND invoices.user_id = auth.uid()
+  ));
+
+-- Politiques RLS pour purchase_order_items
+CREATE POLICY "Users can view purchase order items of their purchase orders"
+  ON public.purchase_order_items FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM public.purchase_orders 
+    WHERE purchase_orders.id = purchase_order_items.purchase_order_id 
+    AND purchase_orders.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can create purchase order items for their purchase orders"
+  ON public.purchase_order_items FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.purchase_orders 
+    WHERE purchase_orders.id = purchase_order_items.purchase_order_id 
+    AND purchase_orders.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can update purchase order items of their purchase orders"
+  ON public.purchase_order_items FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.purchase_orders 
+    WHERE purchase_orders.id = purchase_order_items.purchase_order_id 
+    AND purchase_orders.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can delete purchase order items of their purchase orders"
+  ON public.purchase_order_items FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM public.purchase_orders 
+    WHERE purchase_orders.id = purchase_order_items.purchase_order_id 
+    AND purchase_orders.user_id = auth.uid()
   ));
 
 -- Politiques RLS pour payments
@@ -204,15 +292,6 @@ CREATE POLICY "Users can delete payments of their invoices"
     AND invoices.user_id = auth.uid()
   ));
 
--- Fonction pour mettre à jour updated_at
-CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- Triggers pour updated_at
 CREATE TRIGGER update_clients_updated_at
   BEFORE UPDATE ON public.clients
@@ -224,6 +303,10 @@ CREATE TRIGGER update_products_updated_at
 
 CREATE TRIGGER update_invoices_updated_at
   BEFORE UPDATE ON public.invoices
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER update_purchase_orders_updated_at
+  BEFORE UPDATE ON public.purchase_orders
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- Fonction pour générer un numéro de facture unique
@@ -242,6 +325,27 @@ BEGIN
   WHERE invoice_number LIKE 'FACT-' || year_part || '-%';
   
   new_number := 'FACT-' || year_part || '-' || LPAD(sequence_num::TEXT, 4, '0');
+  
+  RETURN new_number;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Fonction pour générer un numéro de bon de commande unique
+CREATE OR REPLACE FUNCTION public.generate_order_number()
+RETURNS TEXT AS $$
+DECLARE
+  year_part TEXT;
+  sequence_num INTEGER;
+  new_number TEXT;
+BEGIN
+  year_part := TO_CHAR(CURRENT_DATE, 'YYYY');
+  
+  SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM '\\d{4}$') AS INTEGER)), 0) + 1
+  INTO sequence_num
+  FROM public.purchase_orders
+  WHERE order_number LIKE 'BC-' || year_part || '-%';
+  
+  new_number := 'BC-' || year_part || '-' || LPAD(sequence_num::TEXT, 4, '0');
   
   RETURN new_number;
 END;

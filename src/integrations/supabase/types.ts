@@ -267,12 +267,132 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_orders: {
+        Row: {
+          client_id: string
+          created_at: string
+          currency: string
+          delivery_conditions: string | null
+          delivery_date: string
+          discount_amount: number | null
+          id: string
+          notes: string | null
+          order_date: string
+          order_number: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          currency?: string
+          delivery_conditions?: string | null
+          delivery_date: string
+          discount_amount?: number | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          order_number: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          currency?: string
+          delivery_conditions?: string | null
+          delivery_date?: string
+          discount_amount?: number | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          order_number?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount_percent: number | null
+          id: string
+          product_id: string | null
+          purchase_order_id: string
+          quantity: number
+          tax_rate: number
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount_percent?: number | null
+          id?: string
+          product_id?: string | null
+          purchase_order_id: string
+          quantity?: number
+          tax_rate?: number
+          total: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount_percent?: number | null
+          id?: string
+          product_id?: string | null
+          purchase_order_id?: string
+          quantity?: number
+          tax_rate?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       generate_invoice_number: { Args: never; Returns: string }
+      generate_order_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

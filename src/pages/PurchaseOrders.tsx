@@ -4,40 +4,48 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, FileText } from "lucide-react";
+import { Plus, Search, FileCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { invoicesService } from "@/lib/supabaseStorage";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Invoice {
-  id: string;
-  invoice_number: string;
-  invoice_date: string;
-  due_date: string;
-  status: string;
-  type: string;
-  total: number;
-  client_name: string;
+interface PurchaseOrder extends Tables<'purchase_orders'> {
+  client_name?: string;
 }
 
-const Invoices = () => {
+const PurchaseOrders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchInvoices();
+    fetchPurchaseOrders();
   }, []);
 
-  const fetchInvoices = async () => {
+  const fetchPurchaseOrders = async () => {
     try {
-      const data = await invoicesService.getAll();
-      setInvoices(data);
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select(`
+          *,
+          client:clients(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedOrders = data?.map(order => ({
+        ...order,
+        client_name: (order as any).client?.name || 'Client inconnu'
+      })) || [];
+
+      setPurchaseOrders(formattedOrders);
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de charger les factures",
+        description: "Impossible de charger les bons de commande",
         variant: "destructive",
       });
     } finally {
@@ -45,39 +53,27 @@ const Invoices = () => {
     }
   };
 
-  const filteredInvoices = invoices.filter(
-    (invoice) =>
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPurchaseOrders = purchaseOrders.filter(
+    (order) =>
+      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.client_name && order.client_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any, label: string }> = {
-      brouillon: { variant: "outline", label: "Brouillon" },
-      envoyée: { variant: "default", label: "Envoyée" },
-      payée: { variant: "secondary", label: "Payée" },
-      en_retard: { variant: "destructive", label: "En retard" },
-      annulée: { variant: "destructive", label: "Annulée" },
+      draft: { variant: "outline", label: "Brouillon" },
+      sent: { variant: "default", label: "Envoyé" },
+      confirmed: { variant: "secondary", label: "Confirmé" },
+      delivered: { variant: "secondary", label: "Livré" },
+      cancelled: { variant: "destructive", label: "Annulé" },
     };
-    const config = variants[status] || variants.brouillon;
+    const config = variants[status] || variants.draft;
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${
       config.variant === "outline" ? "bg-gray-100 text-gray-800" :
       config.variant === "default" ? "bg-blue-100 text-blue-800" :
       config.variant === "secondary" ? "bg-green-100 text-green-800" :
       "bg-red-100 text-red-800"
     }`}>{config.label}</span>;
-  };
-
-  const getTypeBadge = (type: string) => {
-    const labels: Record<string, string> = {
-      facture: "Facture",
-      devis: "Devis",
-      avoir: "Avoir",
-      complementaire: "Complémentaire",
-    };
-    return <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-      {labels[type] || type}
-    </span>;
   };
 
   if (loading) {
@@ -95,12 +91,12 @@ const Invoices = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Factures</h1>
-            <p className="text-muted-foreground">Gérez vos factures et devis</p>
+            <h1 className="text-3xl font-bold text-foreground">Bons de commande</h1>
+            <p className="text-muted-foreground">Gérez vos bons de commande clients</p>
           </div>
-          <Button onClick={() => navigate("/invoices/new")} className="gap-2">
+          <Button onClick={() => navigate("/purchase-orders/new")} className="gap-2">
             <Plus className="w-4 h-4" />
-            Nouvelle facture
+            Nouveau bon de commande
           </Button>
         </div>
 
@@ -119,44 +115,43 @@ const Invoices = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredInvoices.length === 0 ? (
+            {filteredPurchaseOrders.length === 0 ? (
               <div className="text-center py-12">
-                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucune facture</h3>
+                <FileCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucun bon de commande</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm ? "Aucune facture ne correspond à votre recherche" : "Commencez par créer votre première facture"}
+                  {searchTerm ? "Aucun bon de commande ne correspond à votre recherche" : "Commencez par créer votre premier bon de commande"}
                 </p>
                 {!searchTerm && (
-                  <Button onClick={() => navigate("/invoices/new")}>
-                    Créer une facture
+                  <Button onClick={() => navigate("/purchase-orders/new")}>
+                    Créer un bon de commande
                   </Button>
                 )}
               </div>
             ) : (
               <div className="grid gap-4">
-                {filteredInvoices.map((invoice) => (
+                {filteredPurchaseOrders.map((order) => (
                   <div
-                    key={invoice.id}
+                    key={order.id}
                     className="p-4 border border-border rounded-lg hover:bg-card/50 cursor-pointer transition-all hover:shadow-glow"
-                    onClick={() => navigate(`/invoices/${invoice.id}`)}
+                    onClick={() => navigate(`/purchase-orders/${order.id}`)}
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-foreground">{invoice.invoice_number}</h3>
-                          {getStatusBadge(invoice.status)}
-                          {getTypeBadge(invoice.type)}
+                          <h3 className="font-semibold text-foreground">{order.order_number}</h3>
+                          {getStatusBadge(order.status)}
                         </div>
                         <p className="text-sm text-muted-foreground mb-1">
-                          Client: {invoice.client_name}
+                          Client: {order.client_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Date: {new Date(invoice.invoice_date).toLocaleDateString("fr-FR")}
+                          Date: {new Date(order.order_date).toLocaleDateString("fr-FR")}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-foreground">
-                          {invoice.total.toLocaleString("fr-FR", {
+                          {order.total.toLocaleString("fr-FR", {
                             minimumFractionDigits: 3,
                             maximumFractionDigits: 3,
                           })} TND
@@ -174,4 +169,4 @@ const Invoices = () => {
   );
 };
 
-export default Invoices;
+export default PurchaseOrders;

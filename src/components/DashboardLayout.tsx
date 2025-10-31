@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   FileText, 
@@ -10,9 +9,13 @@ import {
   LogOut,
   Home,
   Menu,
-  X
+  X,
+  BarChart3,
+  FileCheck
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Logo } from "@/components/Logo";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -25,24 +28,32 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      navigate("/auth");
       toast({
-        title: "Erreur",
-        description: "Impossible de se déconnecter",
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de déconnexion",
+        description: "Impossible de se déconnecter. Veuillez réessayer.",
         variant: "destructive",
       });
-    } else {
-      navigate("/auth");
     }
   };
 
   const menuItems = [
     { icon: Home, label: "Tableau de bord", path: "/dashboard" },
     { icon: FileText, label: "Factures", path: "/invoices" },
+    { icon: FileCheck, label: "Bons de commande", path: "/purchase-orders" },
     { icon: Users, label: "Clients", path: "/clients" },
     { icon: Package, label: "Produits", path: "/products" },
-    { icon: Settings, label: "Paramètres", path: "/settings" },
+    { icon: BarChart3, label: "Rapports", path: "/reports" },
   ];
 
   return (
@@ -51,25 +62,29 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <FileText className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">FacturePro</span>
+            <Logo />
+            <span className="text-xl font-bold text-foreground">HEKMA-FACTURES</span>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </Button>
-
-          <Button variant="outline" onClick={handleLogout} className="hidden md:flex gap-2">
-            <LogOut className="w-4 h-4" />
-            Déconnexion
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="hidden md:flex"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X /> : <Menu />}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -92,6 +107,15 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </Link>
               );
             })}
+            
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 mt-4"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5" />
+              Déconnexion
+            </Button>
           </div>
         </aside>
 
@@ -114,10 +138,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   </Link>
                 );
               })}
+              
               <Button
                 variant="outline"
-                onClick={handleLogout}
                 className="w-full justify-start gap-3 text-lg py-6 mt-8"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
               >
                 <LogOut className="w-6 h-6" />
                 Déconnexion

@@ -1,22 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { productsService } from "@/lib/supabaseStorage";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  unit_price: number;
-  tax_rate: number;
-  is_active: boolean;
-}
+interface Product extends Tables<'products'> {}
 
 const Products = () => {
   const navigate = useNavigate();
@@ -26,27 +19,18 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    checkAuthAndFetch();
-  }, []);
-
-  const checkAuthAndFetch = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
     fetchProducts();
-  };
+  }, []);
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, description, unit_price, tax_rate, is_active")
-        .order("name");
-
-      if (error) throw error;
-      setProducts(data || []);
+      const data = await productsService.getAll();
+      const filtered = data.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (product.reference && product.reference.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setProducts(filtered);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -58,17 +42,13 @@ const Products = () => {
     }
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Produits & Services</h1>
-            <p className="text-muted-foreground">Gérez votre catalogue de produits</p>
+            <h1 className="text-3xl font-bold text-foreground">Produits</h1>
+            <p className="text-muted-foreground">Gérez votre catalogue de produits et services</p>
           </div>
           <Button onClick={() => navigate("/products/new")} className="gap-2">
             <Plus className="w-4 h-4" />
@@ -76,52 +56,76 @@ const Products = () => {
           </Button>
         </div>
 
-        <Card className="border-border">
+        <Card>
           <CardHeader>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Rechercher un produit..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Rechercher par nom ou référence..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    fetchProducts();
+                  }}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-center text-muted-foreground py-8">Chargement...</p>
-            ) : filteredProducts.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                {searchTerm ? "Aucun produit trouvé" : "Aucun produit enregistré"}
-              </p>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Chargement...</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucun produit</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm ? "Aucun produit ne correspond à votre recherche" : "Commencez par créer votre premier produit"}
+                </p>
+                {!searchTerm && (
+                  <Button onClick={() => navigate("/products/new")}>
+                    Créer un produit
+                  </Button>
+                )}
+              </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <div
                     key={product.id}
                     className="p-4 border border-border rounded-lg hover:bg-card/50 cursor-pointer transition-all hover:shadow-glow"
                     onClick={() => navigate(`/products/${product.id}`)}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-foreground flex-1">{product.name}</h3>
-                      <Badge variant={product.is_active ? "secondary" : "outline"}>
-                        {product.is_active ? "Actif" : "Inactif"}
-                      </Badge>
+                      <h3 className="font-semibold text-foreground">{product.name}</h3>
+                      {!product.is_active && (
+                        <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                          Inactif
+                        </span>
+                      )}
                     </div>
-                    {product.description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {product.description}
+                    {product.reference && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Réf: {product.reference}
                       </p>
                     )}
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Prix HT</span>
-                      <span className="font-bold text-foreground">{product.unit_price.toFixed(2)} €</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-muted-foreground">TVA</span>
-                      <span className="text-foreground">{product.tax_rate}%</span>
-                    </div>
+                    <p className="text-sm font-semibold">
+                      {product.unit_price.toLocaleString("fr-FR", {
+                        minimumFractionDigits: 3,
+                        maximumFractionDigits: 3,
+                      })} TND
+                    </p>
+                    {product.unit && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Unité: {product.unit}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      TVA: {product.tax_rate}%
+                    </p>
                   </div>
                 ))}
               </div>
