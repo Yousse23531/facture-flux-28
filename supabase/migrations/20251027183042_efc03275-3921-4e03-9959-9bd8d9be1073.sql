@@ -292,6 +292,15 @@ CREATE POLICY "Users can delete payments of their invoices"
     AND invoices.user_id = auth.uid()
   ));
 
+-- Fonction pour mettre à jour updated_at
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Triggers pour updated_at
 CREATE TRIGGER update_clients_updated_at
   BEFORE UPDATE ON public.clients
